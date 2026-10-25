@@ -1,19 +1,21 @@
-<p align="center">
-  <img src="assets/brand/svg/stykanimate-horizontal-primary.svg" alt="StykAnimate" width="420">
-</p>
+# StykManimate
 
-<p align="center">
-  A free, open-source stick figure animation app for Windows, Linux and the browser.<br>
-  Opens Pivot (<code>.piv</code>, <code>.stk</code>) and Stick Nodes projects, and keeps your work on your device.
-</p>
+An experimental video-to-stick-figure animation app, based on [StykAnimate](https://github.com/filippocalippo/StykAnimate-App). Original authorship and GPL-3.0-or-later licensing are preserved. This fork is independent of the official project.
 
-<p align="center">
-  <a href="https://stykanimate.com">Website</a> ·
-  <a href="https://app.stykanimate.com">Open in the browser</a> ·
-  <a href="https://github.com/filippocalippo/styk-animate-releases/releases/latest">Download</a> ·
-  <a href="https://discord.gg/WTssQKBaJp">Discord</a> ·
-  <a href="https://www.youtube.com/channel/UCZg7hZc23PNufzxnX8mCaCw">YouTube</a>
-</p>
+## Video motion capture preview
+
+Open [StykManimate Windows Preview builds](https://github.com/Clatasha/StykManimate/actions/workflows/motion-preview.yml), choose a successful run, and download **StykManimate-Windows-Motion-Preview** under Artifacts. Extract the ZIP and run the portable executable. The runtime and models are included.
+
+In the app, choose **File → Import → Video to stick figures (Preview)**. Start with **Test 10 seconds** to measure speed on your own GPU. Preview beside the source, then open the result as an editable animation.
+
+- Local processing with a required GPU mode or an explicit CPU test.
+- Fast/Balanced capture, 1–4 actors, smoothing and a selected video section.
+- Live progress, elapsed time, measured analysis FPS and a two-minute estimate.
+- Native editable stick figures with normal save and video export.
+
+This is an early 2D prototype. Fighting, occlusion and camera cuts may need manual corrections. There is no promised accuracy percentage or RTX 3060 processing time. [Setup, limits and verification](docs/MOTION-CAPTURE.md).
+
+The remaining animation tools come from upstream:
 
 ## Features
 

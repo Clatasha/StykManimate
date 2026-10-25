@@ -1,0 +1,11 @@
+@layer features {
+  .motion-dialog { block-size: min(900px, calc(100dvh - 32px)); max-block-size: min(900px, calc(100dvh - 32px)); }
+  .motion-capture { display: grid; gap: var(--space-3); }
+  .motion-capture p { margin: 0; }
+  .motion-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3); }
+  .motion-capture label { display: grid; gap: var(--space-1); }
+  .motion-previews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); align-items: center; }
+  .motion-previews :where(video, canvas) { width: 100%; max-height: 280px; object-fit: contain; }
+  .motion-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .motion-capture progress { width: 100%; }
+}

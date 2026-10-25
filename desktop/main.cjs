@@ -94,7 +94,7 @@ let pendingFiles = process.argv.slice(app.isPackaged ? 1 : 2).filter((arg) => /\
 // Vulkan WebGPU opt-in to reach the GPU; see gpu-switches.cjs.
 applyGpuSwitches(app.commandLine);
 
-app.setName('StykAnimate');
+app.setName('StykManimate');
 const profileDirectory = process.env.STYK_USER_DATA_DIR || (!app.isPackaged ? path.join(APP_ROOT, '.desktop-data') : null);
 if (profileDirectory) {
   mkdirSync(profileDirectory, { recursive: true });
@@ -736,7 +736,7 @@ function registerIpc() {
     documentState = { name, dirty, revision: String(state?.revision || '').slice(0, 160), unsaved,
       unsavedName: String(state?.unsavedName || name).slice(0, 180) };
     // The title names the project in front; its dot is that project's own.
-    window.setTitle(`${(state?.activeDirty ?? dirty) ? '• ' : ''}${name} — StykAnimate`);
+    window.setTitle(`${(state?.activeDirty ?? dirty) ? '• ' : ''}${name} — StykManimate`);
     window.setDocumentEdited(dirty);
   });
 }
@@ -757,7 +757,7 @@ async function createWindow() {
   window = new BrowserWindow({
     width: 1560, height: 1000, minWidth: 1000, minHeight: 680,
     backgroundColor: '#0a0b0f', show: false,
-    title: 'StykAnimate',
+    title: 'StykManimate',
     icon: path.join(__dirname, 'assets', 'stykanimate.png'),
     frame: process.platform === 'darwin',
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 14, y: 16 } } : {}),
@@ -851,7 +851,7 @@ async function start() {
   localization.setLocale(normalizeLocale(saved.locale));
   const availability = updateAvailabilityDetails({ packaged: app.isPackaged, platform: process.platform,
     appImage: process.env.APPIMAGE,
-    portable: Boolean(process.env.PORTABLE_EXECUTABLE_DIR), installed: existsSync(path.join(path.dirname(process.execPath), 'Uninstall StykAnimate.exe')) });
+    portable: Boolean(process.env.PORTABLE_EXECUTABLE_DIR), installed: existsSync(path.join(path.dirname(process.execPath), 'Uninstall StykManimate.exe')) });
   const unavailable = availability.message;
   const updater = unavailable ? null : process.platform === 'linux'
     ? new (require('./appimage-updater.cjs').LinuxAppImageUpdater)()
@@ -861,7 +861,7 @@ async function start() {
     currentVersion: app.getVersion(), unavailable, unavailableMessageKey: availability.messageKey,
     onState: value => { if (value.status === 'error') quitting = false; if (window && !window.isDestroyed()) window.webContents.send('styk:update-state-changed', value); },
   });
-  if (app.isPackaged) app.setAsDefaultProtocolClient('stykanimate');
+  // This fork must not take over the official application's URL protocol.
   telemetryReady = new TelemetryService({ directory: app.getPath('userData'), schemaPath: path.join(app.isPackaged ? path.join(process.resourcesPath, 'web') : APP_ROOT, 'src', 'telemetry-schema.mjs'), version: app.getVersion(), development: !app.isPackaged,
     build: telemetryBuild.build, internal: telemetryBuild.internal === true,
     onState: value => { if (window && !window.isDestroyed()) window.webContents.send('styk:telemetry-state-changed', value); },

@@ -1,0 +1,78 @@
+name: StykManimate Windows Preview
+on:
+  push:
+    branches: [main, 'codex/video-motion-capture']
+    paths:
+      - 'backend/**'
+      - 'src/**'
+      - 'desktop/**'
+      - 'scripts/**'
+      - 'package*.json'
+      - '.github/workflows/motion-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: motion-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.11.0'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.9'
+      - name: Install application and motion runtime
+        run: |
+          npm ci --no-audit --no-fund
+          python -m pip install -r scripts/requirements-build.txt -r backend/requirements-motion.txt
+          python -m pip install rtmlib==0.0.16 --no-deps
+      - name: Check capture and editor compatibility
+        run: |
+          npm run check
+          node --test tests/motion-document.test.mjs
+          python -m unittest discover -s backend -p 'test_motion*.py' -v
+      - name: Stage models and standalone runtime
+        env:
+          STYK_MOTION_BUILD: '1'
+        run: |
+          python scripts/stage-motion-models.py
+          npm run build:frame-scan
+          npm run build:vfw
+          npm run build:sidecar
+          npm run verify:sidecar
+          build/sidecar/styk-codec/styk-codec.exe --motion-self-test
+          npm run build:video-encoder
+      - name: Build portable Windows preview
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: >-
+          npm run dist:win -- --x64 --publish never
+          --config.productName=StykManimate
+          --config.appId=com.clatasha.stykmanimate
+          --config.win.target=portable
+          --config.portable.artifactName=StykManimate-Motion-Preview.exe
+          --config.directories.output=release/motion-preview
+      - name: Verify packaged startup
+        env:
+          STYK_PACKAGED_RESOURCES: ${{ github.workspace }}/release/motion-preview/win-unpacked/resources
+          STYK_PACKAGED_EXECUTABLE: ${{ github.workspace }}/release/motion-preview/win-unpacked/StykManimate.exe
+        run: |
+          npm run test:boot:packaged
+          release/motion-preview/win-unpacked/resources/sidecar/styk-codec/styk-codec.exe --motion-self-test
+      - name: Upload preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: StykManimate-Windows-Motion-Preview
+          path: release/motion-preview/StykManimate-Motion-Preview.exe
+          if-no-files-found: error
+          retention-days: 30

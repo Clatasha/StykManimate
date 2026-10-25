@@ -1,7 +1,7 @@
 {
-  "source": "assets/brand/svg/stykanimate-app-icon-blue.svg",
-  "sourceSHA256": "e60af0673b3c359ffe2c2d1a32c1bb524fa90046ecf2360f5620d57083da57cd",
-  "color": "#0D99FF",
+  "source": "assets/brand/svg/stykmanimate-icon.svg",
+  "sourceSHA256": "0bc243bbf6dc962c57526b0a33ad554db5fde837170a3f84d913d03d8120e53a",
+  "color": "#086b78",
   "transparentCorners": true,
   "icoSizes": [
     16,

@@ -39,6 +39,7 @@ import { OnionControls } from "./onion-controls.mjs";
 import { OnionController } from "./onion-controller.mjs";
 import { ThumbnailRenderer } from "./thumbnail-renderer.mjs";
 import { BackgroundDialog } from "./background-dialog.mjs";
+import {showMotionCapture} from './motion-dialog.mjs';
 import { ImportClient } from "./import-client.mjs";
 import { codecMode } from "./codec-job.mjs";
 import { browserCodecHost } from "./codec-web-host.mjs";
@@ -4642,6 +4643,14 @@ const actions = {
     if (builderMode?.active) return toast(interfaceText("app.finishTheFigureOrReturnToAnimateTo6"), "app.finishTheFigureOrReturnToAnimateTo6", {});
     $("file-input").value = "";
     $("file-input").click();
+  },
+  'import-motion': () => {
+    pause();
+    return showMotionCapture({overlays,token:importer.token,onImport:async report=>{
+      const accepted=await acceptImport({document:report,kind:'styk'},`${report._styk.name}.styk`);
+      if(accepted){editor.seek(0);editor.dirty=true;}
+      return accepted;
+    }});
   },
   save: () => saveNative(),
   "save-as": () => saveNative({ saveAs: true }),
