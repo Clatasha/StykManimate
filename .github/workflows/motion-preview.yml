@@ -50,7 +50,7 @@ jobs:
           npm run build:vfw
           npm run build:sidecar
           npm run verify:sidecar
-          build/sidecar/styk-codec/styk-codec.exe --motion-self-test
+          STYK_TOOLS_ROOT="$GITHUB_WORKSPACE/codecs" STYK_BRIDGE_PATH="$GITHUB_WORKSPACE/codecs/codec_bridge.py" build/sidecar/styk-codec/styk-codec.exe --motion-self-test
           npm run build:video-encoder
       - name: Build portable Windows preview
         env:
@@ -68,7 +68,7 @@ jobs:
           STYK_PACKAGED_EXECUTABLE: ${{ github.workspace }}/release/motion-preview/win-unpacked/StykManimate.exe
         run: |
           npm run test:boot:packaged
-          release/motion-preview/win-unpacked/resources/sidecar/styk-codec/styk-codec.exe --motion-self-test
+          STYK_TOOLS_ROOT="$GITHUB_WORKSPACE/release/motion-preview/win-unpacked/resources/tools" STYK_BRIDGE_PATH="$GITHUB_WORKSPACE/release/motion-preview/win-unpacked/resources/codec_bridge.py" release/motion-preview/win-unpacked/resources/sidecar/styk-codec/styk-codec.exe --motion-self-test
       - name: Upload preview
         uses: actions/upload-artifact@v4
         with:
