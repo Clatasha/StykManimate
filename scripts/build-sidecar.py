@@ -66,17 +66,7 @@ def main() -> int:
         "piv_asset_writer", "piv_migrate", "piv_legacy", "piv_legacy_v2",
         "piv_legacy_v4", "piv_side_tables", "pivot_decoder", "orjson",
         "fast_decode", "import_wire", "native_scan", "native_format", "jobs", "work_control",
-        "motion_runtime", "motion_tracking",
     ]
-    if os.environ.get('STYK_MOTION_BUILD') == '1':
-        for package in ('rtmlib', 'onnxruntime', 'cv2'):
-            command.extend(['--collect-all', package])
-        models = app_root / 'build' / 'motion-models'
-        for mode in ('lightweight', 'balanced'):
-            for kind in ('det', 'pose'):
-                if not (models / f'{mode}-{kind}.onnx').is_file():
-                    raise RuntimeError('Stage motion models first: python scripts/stage-motion-models.py')
-        command.extend(['--add-data', str(models) + os.pathsep + 'motion-models'])
     for module in modules:
         command.extend(["--hidden-import", module])
     command.append(str(server))
@@ -95,7 +85,7 @@ def main() -> int:
                 shutil.copyfile(distribution.locate_file(entry), license_output / Path(entry).name)
         manifest = {"platform": sys.platform, "architecture": architecture, "python": platform.python_version(),
                     "orjson": orjson.__version__, "pyinstaller": importlib.metadata.version("PyInstaller"), "nativeScanner": scanner,
-                    "runtimeSources": {name: digest(app_root / "backend" / name) for name in ["server.py", "fast_decode.py", "import_wire.py", "native_scan.py", "native_format.py", "jobs.py", "motion_runtime.py", "motion_tracking.py"]},
+                    "runtimeSources": {name: digest(app_root / "backend" / name) for name in ["server.py", "fast_decode.py", "import_wire.py", "native_scan.py", "native_format.py", "jobs.py"]},
                     "codecSources": {file.name: digest(file) for file in sorted((app_root / "codecs").glob("*.py"))}}
         (output / "build-info.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         print(f"Codec sidecar ready for {sys.platform}: {app_root / 'build' / 'sidecar'}")

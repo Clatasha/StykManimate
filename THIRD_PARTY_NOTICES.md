@@ -29,6 +29,6 @@ npm dependencies are listed with their licenses in [package-lock.json](package-l
 
 Pivot Animator and Stick Nodes are the property of their respective owners. StykAnimate reads and writes their file formats for interoperability and is not affiliated with or endorsed by them.
 
-## StykManimate motion preview
+## StykManimate scene generator
 
-StykManimate retains the original StykAnimate GPL-3.0-or-later code and notices. Its optional Windows motion preview adds [RTMLib](https://github.com/Tau-J/rtmlib) (Apache-2.0), [ONNX Runtime / DirectML](https://github.com/microsoft/onnxruntime) (MIT and bundled provider notices), [OpenCV](https://github.com/opencv/opencv) (Apache-2.0), NumPy (BSD-3-Clause) and tqdm (MPL-2.0/MIT). Package license files are collected alongside the frozen runtime. YOLOX HumanArt and RTMPose Body7 model weights are staged from RTMLib’s configured upstream model URLs; their upstream notices and applicable model/data terms still apply. See [motion capture documentation](docs/MOTION-CAPTURE.md).
+StykManimate retains the original StykAnimate GPL-3.0-or-later code and notices. Scene generation uses the editor’s native figures, camera moves and effect presets; no additional motion models or inference packages are bundled.

@@ -8,7 +8,7 @@ What's new in each version of StykAnimate.
 
 ### Added
 
-- Convert video movement into editable stick figures with a short speed test and a side-by-side preview (StykManimate experimental desktop feature).
+- Generate editable scenes from supported action prompts or random themes, with one to four characters, existing effects and lengths from one to ten minutes (StykManimate preview).
 - StykAnimate is now open source: its code is on GitHub under the GPL-3.0 license.
 - Everyday Props · Pivot 3D: 30 editable everyday objects with working hinges and wheels for your animations.
 - Vehicles · Pivot 3D asset pack with twelve editable vehicles, spinning wheels, steering and opening parts.
@@ -21,12 +21,13 @@ What's new in each version of StykAnimate.
 
 ### Changed
 
+- Removed experimental video motion capture from StykManimate.
+
 - Ctrl-dragging a node that uses IK stretches it like any other node.
 - A calmer top bar: the menus are in the StykAnimate menu, and your open projects take their place.
 
 ### Fixed
 
-- Video import no longer gets stuck after a slow first startup; the runtime check can be retried.
 - Fixed an error when deleting your last color palette.
 
 ## [1.2.5]

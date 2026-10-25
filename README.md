@@ -1,19 +1,16 @@
 # StykManimate
 
-An experimental video-to-stick-figure animation app, based on [StykAnimate](https://github.com/filippocalippo/StykAnimate-App). Original authorship and GPL-3.0-or-later licensing are preserved. This fork is independent of the official project.
+A prompt and random scene animation app, based on [StykAnimate](https://github.com/filippocalippo/StykAnimate-App). Original authorship and GPL-3.0-or-later licensing are preserved. This fork is independent of the official project.
 
-## Video motion capture preview
+## Animated scene preview
 
-Open [StykManimate Windows Preview builds](https://github.com/Clatasha/StykManimate/actions/workflows/motion-preview.yml), choose a successful run, and download **StykManimate-Windows-Motion-Preview** under Artifacts. Extract the ZIP and run the portable executable. The runtime and models are included.
+Open [Windows Preview builds](https://github.com/Clatasha/StykManimate/actions/workflows/motion-preview.yml), choose the latest successful **Scene Preview** run, and download **StykManimate-Windows-Scene-Preview** under Artifacts. Extract the ZIP and run the portable executable.
 
-In the app, choose **File → Import → Video to stick figures (Preview)**. Start with **Test 10 seconds** to measure speed on your own GPU. Preview beside the source, then open the result as an editable animation.
+Choose **File → Import → Generate animated scene…**. Enter supported actions or click **Generate random scene**. Choose 60 seconds, 2 minutes or a custom 60–600 seconds, one to four characters and a theme. Open the result to play, edit, save and export through the normal editor.
 
-- Local processing with a required GPU mode or an explicit CPU test.
-- Fast/Balanced capture, 1–4 actors, smoothing and a selected video section.
-- Live progress, elapsed time, measured analysis FPS and a two-minute estimate.
-- Native editable stick figures with normal save and video export.
+Example: “Red walks, red punches, blue dodges, blue kicks, red falls, red gets up. Add camera shake and glow.”
 
-This is an early 2D prototype. Fighting, occlusion and camera cuts may need manual corrections. There is no promised accuracy percentage or RTX 3060 processing time. [Setup, limits and verification](docs/MOTION-CAPTURE.md).
+This local composer uses supported action words and reusable choreography. It does not interpret arbitrary stories, dialogue, props or exact counts. It repeats and varies the requested actions to fill long scenes. Camera moves and effect clips remain editable. Video motion capture has been removed. [Supported actions and limits](docs/SCENE-GENERATOR.md).
 
 The remaining animation tools come from upstream:
 

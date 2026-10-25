@@ -905,7 +905,7 @@ class Handler(BaseHTTPRequestHandler):
     def _json(self, status: int, value: object):
         self._send(status, encoded_json(value), "application/json; charset=utf-8")
 
-    def _body(self, limit: int, sink=None) -> bytes:
+    def _body(self, limit: int) -> bytes:
         if self.headers.get("Transfer-Encoding"):
             raise ApiError(400, "unsupported_transfer", "Send a bounded Content-Length upload.")
         try:
@@ -922,7 +922,7 @@ class Handler(BaseHTTPRequestHandler):
         # when that buffer and the socket have no data. BytesIO avoids a retained
         # list of chunks and its final immutable value becomes the request body.
         self.connection.setblocking(False)
-        body, remaining, deadline = sink if sink is not None else io.BytesIO(), length, time.monotonic() + 60
+        body, remaining, deadline = io.BytesIO(), length, time.monotonic() + 60
         try:
             while remaining:
                 checkpoint()
@@ -940,7 +940,7 @@ class Handler(BaseHTTPRequestHandler):
                 remaining -= len(chunk)
                 deadline = time.monotonic() + 60
             checkpoint()
-            return body.getvalue() if sink is None else b''
+            return body.getvalue()
         finally:
             self.connection.settimeout(60)
 
@@ -974,9 +974,6 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, health_payload(self.server.jobs.snapshot(), session_proof(self.server.token)))
             elif parsed.path == "/api/samples":
                 self._json(200, {"ok": True, "samples": self.server.store.samples()})
-            elif parsed.path == "/api/motion/status":
-                import motion_runtime
-                self._json(200, motion_runtime.status())
             elif parsed.path == "/api/source":
                 with self._job():
                     source_id = parse_qs(parsed.query).get("id", [""])[0]
@@ -1037,7 +1034,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.server.store.release_source(owner_id)
                 self._send(204, b"", "application/json")
                 return
-            if parsed.path not in ("/api/import", "/api/open", "/api/export", "/api/source/retain", "/api/motion/capture"):
+            if parsed.path not in ("/api/import", "/api/open", "/api/export", "/api/source/retain"):
                 raise ApiError(404, "route_not_found", "Unknown codec endpoint.")
             with self._job():
                 self._project_post(parsed)
@@ -1052,9 +1049,7 @@ class Handler(BaseHTTPRequestHandler):
     def _project_post(self, parsed):
         # Admission precedes reading/parsing large uploads. The control endpoint
         # and health remain independent of the single memory-heavy work slot.
-        if parsed.path == "/api/motion/capture":
-            self._motion_capture(parsed)
-        elif parsed.path == "/api/import":
+        if parsed.path == "/api/import":
             name = parse_qs(parsed.query).get("filename", ["imported.piv"])[0]
             result = self.server.store.import_bytes(self._body(import_size_limit(name)), name, as_json=True,
                 prefer_native=import_wire.CONTENT_TYPE in self.headers.get("Accept", ""),
@@ -1089,36 +1084,6 @@ class Handler(BaseHTTPRequestHandler):
         else:
             raise ApiError(404, "route_not_found", "Unknown codec endpoint.")
 
-    def _motion_capture(self, parsed):
-        import motion_runtime
-        available = motion_runtime.status()
-        if not available['available']:
-            raise ApiError(503, 'motion_unavailable', available['message'])
-        # The common authenticated job owns admission and cancellation. A video
-        # spools to disk in bounded chunks, independently of codec source caches.
-        with tempfile.TemporaryDirectory(prefix='styk-motion-') as directory:
-            path = Path(directory) / 'input.video'
-            with path.open('wb') as output:
-                self._body(MAX_DOCUMENT, sink=output)
-            self.close_connection = True
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/x-ndjson')
-            self.send_header('Cache-Control', 'no-store')
-            self.send_header('X-Content-Type-Options', 'nosniff')
-            self.send_header('Connection', 'close')
-            self.end_headers()
-
-            def emit(value):
-                checkpoint()
-                self.wfile.write(encoded_json(value) + b'\n')
-                self.wfile.flush()
-            try:
-                motion_runtime.capture(path, parse_qs(parsed.query), emit)
-            except (ConnectionError, jobs.JobCancelled):
-                raise
-            except Exception as exc:
-                emit(dict(type='error', error=str(exc)))
-
 
 def stop_when_stdin_closes(server: LocalServer) -> None:
     """Shut down once whoever spawned us closes our standard input.
@@ -1145,7 +1110,6 @@ def stop_when_stdin_closes(server: LocalServer) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--motion-self-test', action='store_true', help='verify bundled motion models and CPU inference, then exit')
     parser.add_argument("--host", default="127.0.0.1", choices=["127.0.0.1", "localhost"])
     parser.add_argument("--port", default=47831, type=int)
     parser.add_argument("--workspace", type=Path, default=WORKSPACE)
@@ -1154,26 +1118,6 @@ def main() -> int:
     parser.add_argument("--exit-on-stdin-close", action="store_true",
                         help="stop when the parent closes standard input (set by the desktop app)")
     args = parser.parse_args()
-    if args.motion_self_test:
-        import motion_runtime
-        readiness_started = time.perf_counter()
-        already_loaded = set(sys.modules)
-        readiness = motion_runtime.status()
-        if not readiness['available']:
-            raise RuntimeError(readiness['message'])
-        newly_loaded = set(sys.modules) - already_loaded
-        if any(name.split('.')[0] in ('cv2', 'rtmlib', 'onnxruntime') for name in newly_loaded):
-            raise RuntimeError('Readiness must not load native motion libraries before capture starts.')
-        readiness_ms = (time.perf_counter() - readiness_started) * 1000
-        import numpy as np
-        detector, pose, provider = motion_runtime.create_models('lightweight', 'cpu')
-        image = np.zeros((360, 640, 3), dtype=np.uint8)
-        boxes = detector(image)
-        points, scores = pose(image, bboxes=[[100, 20, 300, 340]])
-        if points.shape != (1, 17, 2) or not np.isfinite(points).all() or not np.isfinite(scores).all():
-            raise RuntimeError('Motion runtime produced invalid joint data.')
-        print(json.dumps(dict(ok=True, readiness_ms=readiness_ms, provider=provider, providers=motion_runtime.status()['providers'], keypoints=list(points.shape), detections=len(boxes))))
-        return 0
     server = LocalServer((args.host, args.port), ProjectStore(args.workspace), args.static_root, args.token)
     if args.exit_on_stdin_close:
         stop_when_stdin_closes(server)

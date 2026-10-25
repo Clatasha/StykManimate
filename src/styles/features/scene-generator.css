@@ -1,0 +1,16 @@
+@layer features {
+  .scene-dialog { block-size: min(900px, calc(100dvh - 32px)); max-block-size: calc(100dvh - 32px); }
+  .scene-generator { display: grid; gap: var(--space-3); }
+  .scene-generator p { margin: 0; }
+  .scene-generator label { display: grid; gap: var(--space-1); }
+  .scene-generator textarea { width: 100%; min-height: 85px; resize: vertical; }
+  .scene-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); }
+  .scene-generator .scene-check { display: flex; align-items: center; gap: var(--space-2); }
+  .scene-generator details p { margin-block-start: var(--space-2); color: var(--text-2); }
+  .scene-generator progress { width: 100%; }
+  .scene-storyboard { min-block-size: 120px; max-block-size: 180px; overflow-y: auto; margin: 0; padding-inline-start: 28px; }
+  .scene-storyboard li { padding-block: 4px; }
+  .scene-storyboard:empty { display: none; }
+  .scene-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .scene-options [hidden], .scene-buttons [hidden] { display: none; }
+}

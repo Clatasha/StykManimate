@@ -39,7 +39,7 @@ import { OnionControls } from "./onion-controls.mjs";
 import { OnionController } from "./onion-controller.mjs";
 import { ThumbnailRenderer } from "./thumbnail-renderer.mjs";
 import { BackgroundDialog } from "./background-dialog.mjs";
-import {showMotionCapture} from './motion-dialog.mjs';
+import {showSceneGenerator} from './scene-dialog.mjs';
 import { ImportClient } from "./import-client.mjs";
 import { codecMode } from "./codec-job.mjs";
 import { browserCodecHost } from "./codec-web-host.mjs";
@@ -4644,9 +4644,9 @@ const actions = {
     $("file-input").value = "";
     $("file-input").click();
   },
-  'import-motion': () => {
-    pause();
-    return showMotionCapture({overlays,token:importer.token,onImport:async report=>{
+  'generate-scene': () => {
+    if (builderMode?.active) return toast('Finish your figure before generating a scene.'); pause();
+    return showSceneGenerator({overlays,figures:editor.report.figure_types,onImport:async report=>{
       const accepted=await acceptImport({document:report,kind:'styk'},`${report._styk.name}.styk`);
       if(accepted){editor.seek(0);editor.dirty=true;}
       return accepted;

@@ -73,7 +73,7 @@ group('file', [
   ['previous-project', english["commands.previousProject"], 'chevron-left', {labelKey: "commands.previousProject", keywords: ['switch', 'tab']}],
   ['import', english["menu.importFigures"], 'import', {labelKey: 'menu.importFigures', keywords: ['stk', 'stkz', 'load figure']}],
   ['import-sprite', english["menu.importSprite"], 'image', {labelKey: 'menu.importSprite', keywords: ['picture', 'png', 'sprite']}],
-  ['import-motion', 'Video to stick figures (Preview)', 'person', {keywords:['video','motion','capture','benchmark']}],
+  ['generate-scene', 'Generate animated scene…', 'person', {keywords:['prompt','random','scene','generate','animation']}],
   ['import-background', english["menu.importBackground"], 'image', {labelKey: 'menu.importBackground', keywords: ['backdrop', 'picture']}],
   ['save-and-close', english["commands.saveAndClose"], 'save', {...internal, labelKey: "commands.saveAndClose"}],
   ['save-and-update', english["commands.saveAndUpdate"], 'save', {...internal, labelKey: "commands.saveAndUpdate"}],
