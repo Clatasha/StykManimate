@@ -26,6 +26,7 @@ What's new in each version of StykAnimate.
 
 ### Fixed
 
+- Video import no longer gets stuck after a slow first startup; the runtime check can be retried.
 - Fixed an error when deleting your last color palette.
 
 ## [1.2.5]

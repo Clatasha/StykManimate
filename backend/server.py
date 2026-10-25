@@ -1156,6 +1156,15 @@ def main() -> int:
     args = parser.parse_args()
     if args.motion_self_test:
         import motion_runtime
+        readiness_started = time.perf_counter()
+        already_loaded = set(sys.modules)
+        readiness = motion_runtime.status()
+        if not readiness['available']:
+            raise RuntimeError(readiness['message'])
+        newly_loaded = set(sys.modules) - already_loaded
+        if any(name.split('.')[0] in ('cv2', 'rtmlib', 'onnxruntime') for name in newly_loaded):
+            raise RuntimeError('Readiness must not load native motion libraries before capture starts.')
+        readiness_ms = (time.perf_counter() - readiness_started) * 1000
         import numpy as np
         detector, pose, provider = motion_runtime.create_models('lightweight', 'cpu')
         image = np.zeros((360, 640, 3), dtype=np.uint8)
@@ -1163,7 +1172,7 @@ def main() -> int:
         points, scores = pose(image, bboxes=[[100, 20, 300, 340]])
         if points.shape != (1, 17, 2) or not np.isfinite(points).all() or not np.isfinite(scores).all():
             raise RuntimeError('Motion runtime produced invalid joint data.')
-        print(json.dumps(dict(ok=True, provider=provider, providers=motion_runtime.status()['providers'], keypoints=list(points.shape), detections=len(boxes))))
+        print(json.dumps(dict(ok=True, readiness_ms=readiness_ms, provider=provider, providers=motion_runtime.status()['providers'], keypoints=list(points.shape), detections=len(boxes))))
         return 0
     server = LocalServer((args.host, args.port), ProjectStore(args.workspace), args.static_root, args.token)
     if args.exit_on_stdin_close:

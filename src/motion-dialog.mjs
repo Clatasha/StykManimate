@@ -21,26 +21,29 @@ export async function showMotionCapture({overlays,token='',onImport,baseURL=loca
     <p data-status role="status" aria-live="polite">Checking motion runtime…</p>
     <progress max="1" value="0" aria-label="Capture progress"></progress>
     <p data-result></p>
-    <div class="motion-actions"><button type="button" data-test>Test 10 seconds</button><button type="button" data-convert>Convert selected section</button><button type="button" data-cancel hidden>Cancel capture</button><button type="button" data-review hidden>Next uncertain frame</button><button type="button" data-open hidden>Open editable animation</button></div>`;
+    <div class="motion-actions"><button type="button" data-retry hidden>Retry runtime check</button><button type="button" data-test>Test 10 seconds</button><button type="button" data-convert>Convert selected section</button><button type="button" data-cancel hidden>Cancel capture</button><button type="button" data-review hidden>Next uncertain frame</button><button type="button" data-open hidden>Open editable animation</button></div>`;
   const field=name=>body.querySelector(`[data-field="${name}"]`),status=body.querySelector('[data-status]'),result=body.querySelector('[data-result]');
   const video=body.querySelector('video'),canvas=body.querySelector('canvas'),ctx=canvas.getContext('2d');
   const test=body.querySelector('[data-test]'),convert=body.querySelector('[data-convert]'),cancel=body.querySelector('[data-cancel]'),open=body.querySelector('[data-open]');
   const progress=body.querySelector('progress');
   const review=body.querySelector('[data-review]');
+  const retry=body.querySelector('[data-retry]');
   for(const label of body.querySelectorAll('label'))label.classList.add('ui-form-row');
   for(const input of body.querySelectorAll('input,select'))input.classList.add('ui-field-input');
   for(const button of body.querySelectorAll('button'))button.classList.add('ui-button');
   open.dataset.variant='primary';
   let worker,jobId,report,url,metrics,busy=false,available=false,timer,raf,closed=false,lastProgress,reviewIndex=0;
+  let readinessController,readinessTimer;
   const headers=()=>token?{Authorization:`Bearer ${token}`}:{ };
-  const sync=()=>{test.disabled=convert.disabled=busy||!available||!field('file').files[0];for(const input of body.querySelectorAll('input,select'))input.disabled=busy;cancel.hidden=!busy;};
+  const sync=()=>{test.disabled=convert.disabled=busy||!available||!field('file').files[0];for(const input of body.querySelectorAll('input,select'))input.disabled=busy;cancel.hidden=!busy;retry.disabled=busy||Boolean(readinessController);};
+  function cancelReadiness(){readinessController?.abort();clearInterval(readinessTimer);}
   function stop(){
     worker?.terminate();worker=null;
     if(jobId)void fetch(new URL(`/api/cancel?id=${jobId}`,baseURL),{method:'POST',body:'',headers:headers(),signal:AbortSignal.timeout(2000)}).catch(()=>{});
     jobId=null;busy=false;clearInterval(timer);sync();
   }
   const dialog=createDialog({title:'Video to stick figures · Preview',size:'lg',className:'motion-dialog',body,overlays,
-    onSubmit:()=>false,beforeClose:()=>{stop();return true;}});
+    onSubmit:()=>false,beforeClose:()=>{cancelReadiness();stop();return true;}});
   // Keep capture/open/cancel actions visible while the options and previews
   // scroll within the existing dialog shell on smaller screens.
   dialog.form.querySelector('.ui-dialog-foot').append(body.querySelector('.motion-actions'));
@@ -119,12 +122,36 @@ export async function showMotionCapture({overlays,token='',onImport,baseURL=loca
     open.disabled=true;
     try{if(await onImport(report)!==false)dialog.close();}catch(error){dialog.setError(error.message);}finally{open.disabled=false;}
   });
+  async function checkRuntime(){
+    if(closed||readinessController||busy)return;
+    const controller=new AbortController();readinessController=controller;
+    available=false;retry.hidden=true;sync();
+    const started=performance.now();
+    const showReadiness=()=>{status.textContent=`Waiting for the local motion service… ${seconds((performance.now()-started)/1000)} elapsed. Video conversion has not started.`;};
+    showReadiness();readinessTimer=setInterval(showReadiness,1000);
+    try{
+      const response=await fetch(new URL('/api/motion/status',baseURL),{headers:headers(),
+        signal:AbortSignal.any([controller.signal,AbortSignal.timeout(90000)])});
+      if(!response.ok)throw new Error(`The local motion service is unavailable (${response.status}).`);
+      const state=await response.json();if(closed||controller.signal.aborted)return;
+      available=state.available;
+      status.textContent=state.message||(available?`Ready. Available processors: ${state.providers.join(', ')}.`:'Motion runtime is unavailable.');
+      retry.hidden=available;
+    }catch(error){
+      if(closed||controller.signal.aborted)return;
+      status.textContent=error.name==='TimeoutError'
+        ?'The local motion service is taking longer to start. Wait a moment, then choose Retry runtime check. Video conversion has not started.'
+        :`Could not check the local motion service. ${error.message} Choose Retry runtime check to try again.`;
+      retry.hidden=false;
+    }finally{
+      clearInterval(readinessTimer);
+      if(readinessController===controller)readinessController=null;
+      if(!closed)sync();
+    }
+  }
+  retry.addEventListener('click',()=>void checkRuntime());
   sync();draw();
   const showing=dialog.showModal();
-  fetch(new URL('/api/motion/status',baseURL),{headers:headers(),signal:AbortSignal.timeout(30000)}).then(async response=>{
-    if(!response.ok)throw new Error('Motion capture requires the desktop preview or local development server.');
-    const state=await response.json();if(closed)return;available=state.available;
-    status.textContent=available?`Ready. Available processors: ${state.providers.join(', ')}.`:state.message;sync();
-  }).catch(error=>{if(!closed){status.textContent=error.message;sync();}});
-  await showing;closed=true;stop();cancelAnimationFrame(raf);video.pause();video.removeAttribute('src');video.load();if(url)URL.revokeObjectURL(url);
+  void checkRuntime();
+  await showing;closed=true;cancelReadiness();stop();cancelAnimationFrame(raf);video.pause();video.removeAttribute('src');video.load();if(url)URL.revokeObjectURL(url);
 }

@@ -1,4 +1,5 @@
 """Optional local video inference. Frames stream to the editor; video stays local."""
+import importlib.util
 import math
 import os
 from pathlib import Path
@@ -10,14 +11,24 @@ from work_control import checkpoint
 
 
 def status():
-    try:
-        import cv2  # noqa: F401
-        import rtmlib  # noqa: F401
-        import onnxruntime as ort
-        return dict(available=True, providers=ort.get_available_providers())
-    except (ImportError, OSError) as exc:
-        return dict(available=False, providers=[], error=str(exc),
+    # Readiness must not import native inference libraries. Loading their DLLs
+    # can be slow on a cold Windows start; doing it here blocked the importer
+    # before the user could even start a capture. Actual device verification
+    # belongs to create_models(), after progress/cancellation are available.
+    missing = []
+    for name in ('cv2', 'rtmlib', 'onnxruntime'):
+        try:
+            if importlib.util.find_spec(name) is None:
+                missing.append(name)
+        except (ImportError, ValueError):
+            missing.append(name)
+    if missing:
+        return dict(available=False, providers=[], missing=missing,
                     message='Motion capture needs the optional motion runtime. Use the StykManimate Windows preview or see docs/MOTION-CAPTURE.md.')
+    ort = sys.modules.get('onnxruntime')
+    providers = ort.get_available_providers() if hasattr(ort, 'get_available_providers') else []
+    return dict(available=True, providers=providers,
+                message='Motion runtime is ready. Your selected processor will be checked when conversion starts.')
 
 
 def model_directory():
@@ -80,10 +91,12 @@ def number(query, key, default, low, high):
 
 
 def capture(path, query, emit):
+    started = time.perf_counter()
+    checkpoint()
+    emit(dict(type='stage', message='Starting motion runtime. First use can take longer while the local libraries load.'))
     import cv2
     import numpy as np
 
-    started = time.perf_counter()
     mode = query.get('mode', ['lightweight'])[0]
     device = query.get('device', ['gpu'])[0]
     if mode not in ('lightweight', 'balanced') or device not in ('gpu', 'cpu'):

@@ -10,6 +10,8 @@ Open the application menu → **File → Import → Video to stick figures (Prev
 
 The status shows processing FPS, elapsed time and an estimated remaining time. Completed results separate model setup from analysis time and estimate analysis time for a similar two-minute clip at the chosen capture FPS. These estimates do not include upload, editor preparation or export. Source movement, number of people, settings and hardware affect results. No RTX 3060 performance is certified by a successful CI build.
 
+Opening the importer checks that the runtime is installed without loading the native inference libraries. Those load after conversion starts, with a preparation message and separate setup timing. If the local service takes too long to answer, **Retry runtime check** checks it again without reopening the app. Closing the dialog cancels the pending readiness request.
+
 Play or scrub the original video beside the generated stick figures. **Next uncertain frame** jumps between frames flagged for review. **Open editable animation** creates a new project tab without replacing your work. Save it as `.styk` to preserve capture metadata; the ordinary editor and export commands apply. The generated project starts unsaved.
 
 ## First-version scope
