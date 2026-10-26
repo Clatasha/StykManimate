@@ -4648,7 +4648,7 @@ const actions = {
     if (builderMode?.active) return toast('Finish your figure before generating a scene.'); pause();
     return showSceneGenerator({overlays,figures:editor.report.figure_types,onImport:async report=>{
       const accepted=await acceptImport({document:report,kind:'styk'},`${report._styk.name}.styk`);
-      if(accepted){editor.seek(0);editor.dirty=true;}
+      if(accepted){editor.seek(0);editor.select(1);editor.dirty=true;}
       return accepted;
     }});
   },

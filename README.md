@@ -6,7 +6,7 @@ A prompt and random scene animation app, based on [StykAnimate](https://github.c
 
 Open [Windows Preview builds](https://github.com/Clatasha/StykManimate/actions/workflows/motion-preview.yml), choose the latest successful **Scene Preview** run, and download **StykManimate-Windows-Scene-Preview** under Artifacts. Extract the ZIP and run the portable executable.
 
-Choose **File → Import → Generate animated scene…**. Enter supported actions or click **Generate random scene**. Choose 60 seconds, 2 minutes or a custom 60–600 seconds, one to four characters and a theme. Open the result to play, edit, save and export through the normal editor.
+Choose **File → Import → Generate animated scene…**. Enter supported actions or click **Generate random scene**. Choose 60 seconds, 2 minutes or a custom 60–600 seconds, one to four characters and a theme. Choose a layered location, day/sunset/night lighting, camera style and optional contact shadows; the location preview updates immediately. Open the result to play, edit, save and export through the normal editor.
 
 Example: “Red walks, red punches, blue dodges, blue kicks, red falls, red gets up. Add camera shake and glow.”
 

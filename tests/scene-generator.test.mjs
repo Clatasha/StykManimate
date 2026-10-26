@@ -5,8 +5,12 @@ import {Editor} from '../src/editor.mjs';
 import {defaultFigure} from '../src/demo.mjs';
 import {validateScene} from '../src/pivot/model.mjs';
 import {validateCameraMotion} from '../src/camera-motion.mjs';
+import {SCENE_LOCATIONS,SCENE_LIGHTING} from '../src/scene-backgrounds.mjs';
+import {sceneActorBounds} from '../src/scene-direction.mjs';
+import {validateLayerState} from '../src/layers.mjs';
+import {validateLayerSheet} from '../src/layer-sheet.mjs';
 import {validateVfxClips} from '../src/vfx-clips.mjs';
-function generate(options){const g=generateScene(options);let next;do{next=g.next();}while(!next.done);return next.value;}
+function generate(options){const g=generateScene({location:'none',direction:'off',shadows:false,...options});let next;do{next=g.next();}while(!next.done);return next.value;}
 test('60 second random scene has a complete editable native timeline, continuous roots and finite poses',()=>{
  const report=generate({randomize:true,seed:12});validateScene(report);validateCameraMotion(report._styk.cameraMotion);validateVfxClips(report._styk.vfxClips);
  const e=new Editor({demo:false,layerTimeline:true}).load(report);assert.equal(e.totalTicks,1440);assert.equal(report.keyframes.length,1440);
@@ -51,4 +55,27 @@ test('named native generators and scene-only effects use the correct editable cl
  for(const name of ['Smoke','Aura','Energy beam','Shockwave'])assert.ok(clips.some(c=>c.name===name));
  assert.equal(clips.find(c=>c.name==='Shockwave').target.kind,'scene');
  assert.equal(clips.find(c=>c.name==='Aura').target.kind,'figure');
+});
+test('every location and lighting builds valid, separately editable held scenery with fixed storage',()=>{
+ for(const location of Object.keys(SCENE_LOCATIONS))for(const lighting of Object.keys(SCENE_LIGHTING)){
+  const r=generate({randomize:true,location,lighting,shadows:true,direction:'cinematic'});validateScene(r);validateLayerState(r._styk.layers);validateLayerSheet(r);
+  const e=new Editor({demo:false,layerTimeline:true}).load(r);e.seek(1000);assert.equal(e.evaluatedFrame.objects.filter(o=>o.unique_id<=2).length,2);assert.ok(e.geometry.drawables.length>20);
+  if(location!=='none'){
+   assert.equal(r._styk.frameSources['generated-scenery'].objects.length,4);
+   assert.equal(e.evaluatedFrame.objects.filter(o=>o.unique_id>=100).length,4);
+   for(const name of ['Distance','Scenery','Stage','Foreground']){const id=Object.keys(r._styk.layers.byId).find(id=>r._styk.layers.byId[id].name===name);assert.equal(r._styk.layerSheet.tracks[id].keys.length,1);}
+  }else assert.equal(r.backgrounds.length,0);
+ }
+});
+test('automatic camera keeps every actor in frame through jumps, travel and falls',()=>{
+ for(const people of [1,2,4])for(const direction of ['calm','cinematic','intense']){
+  const r=generate({people,direction,prompt:'Red runs, blue jumps, red punches, blue falls, blue gets up.',effects:false});
+  for(const frame of r.keyframes){const b=sceneActorBounds(r,frame,people),c=frame.camera,cx=480+c.x,cy=270+c.y;assert.ok(b.left>=cx-480*c.scale+25);assert.ok(b.right<=cx+480*c.scale-25);assert.ok(b.top>=cy-270*c.scale+25);assert.ok(b.bottom<=cy+270*c.scale-25);}
+  assert.notDeepEqual(r.keyframes[0].camera,r.keyframes[400].camera);
+ }
+});
+test('long scenes keep scenery poses once; plain canvas, locked camera and shadows can be disabled',()=>{
+ const long=generate({duration:600,people:4,randomize:true,location:'forest',shadows:true,direction:'cinematic'});assert.equal(long.keyframes.length,14400);assert.equal(long._styk.frameSources['generated-scenery'].objects.length,4);assert.equal(long.keyframes[0].objects.length,8);assert.ok(long.figure_types.reduce((n,f)=>n+f.segments.length,0)<5000);
+ const plain=generate({randomize:true,location:'none',shadows:false,direction:'off',effects:false});assert.equal(plain.figure_types.length,2);assert.ok(plain.keyframes.every(f=>f.camera.is_default));assert.equal(plain._styk.frameSources,undefined);
+ for(const key of ['location','lighting','direction'])assert.throws(()=>planScene({[key]:'unknown',randomize:true}),/Choose an available/);
 });

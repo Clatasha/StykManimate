@@ -4,6 +4,8 @@ import {createCameraMotion,validateCameraMotion} from './camera-motion.mjs';
 import {createVfxClip,validateVfxClips} from './vfx-clips.mjs';
 import {createVfx,VFX_REGISTRY} from './vfx.mjs';
 import {VFX_PRESETS} from './vfx-presets.mjs';
+import {buildScenery,installScenery,createContactShadow,SCENE_LOCATIONS,SCENE_LIGHTING} from './scene-backgrounds.mjs';
+import {directScene,SCENE_DIRECTIONS} from './scene-direction.mjs';
 
 export const SCENE_ACTIONS=['walk','run','punch','kick','block','dodge','jump','fall','get up','wave','celebrate','idle'];
 export const SCENE_THEMES=['fight','chase','comedy','everyday','surprise'];
@@ -20,9 +22,11 @@ const choose=(list,rng)=>list[Math.floor(rng()*list.length)];
 export function compatibleSceneFigure(figure){
  const base=defaultFigure();return figure?.segments?.length===10&&!figure._styk?.movieclip&&figure.segments.every((s,i)=>s.segment_id===base.segments[i].segment_id&&s.parent_id===base.segments[i].parent_id&&s.length>0)&&!figure.image_assets?.length&&!figure.text_assets?.length;
 }
-export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,randomize=false,effects=true}={}){
+export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,randomize=false,effects=true,location='rooftop',lighting='night',direction='cinematic',shadows=true}={}){
  if(!Number.isInteger(duration)||duration<60||duration>600)throw new Error('Choose a whole length from 60 to 600 seconds.');
  if(!Number.isInteger(people)||people<1||people>4)throw new Error('Choose one to four characters.');
+ for(const [value,choices,label] of [[location,SCENE_LOCATIONS,'location'],[lighting,SCENE_LIGHTING,'lighting'],[direction,SCENE_DIRECTIONS,'camera style']])if(!Object.hasOwn(choices,value))throw new Error(`Choose an available ${label}.`);
+ if(typeof shadows!=='boolean')throw new Error('Choose whether to add contact shadows.');
  if(!SCENE_THEMES.includes(theme))throw new Error('Choose an available theme.');
  if(typeof prompt!=='string'||prompt.length>2000)throw new Error('Keep the prompt under 2,000 characters.');
  if(!Number.isInteger(seed)||seed<0||seed>2147483647)throw new Error('Choose a seed from 0 to 2147483647.');
@@ -40,7 +44,7 @@ export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,r
  if(commands.some(c=>c.action==='fall')&&!commands.some(c=>c.action==='get up'))warnings.push('Recovery is added after falls so the scene can continue.');
  const pools={fight:['punch','block','kick','dodge','punch','jump'],chase:['run','run','jump','dodge','run'],comedy:['walk','wave','jump','fall','celebrate'],everyday:['walk','wave','idle','jump','celebrate']};
  const beats=[],down=Array(people).fill(false);let start=0,commandIndex=0,last='';
- const add=(seconds,actions,label)=>{beats.push({start,duration:seconds,actions,label});start+=seconds;};
+ const add=(seconds,actions,label)=>{const shot=direction==='off'?'Locked wide':start===0?'Establishing wide':label==='Ending'?'Closing wide':actions.some(a=>['run','walk','jump','approach'].includes(a))?'Wide tracking':actions.some(a=>['punch','kick','block','dodge'].includes(a))?'Medium exchange':'Reaction / recovery';beats.push({start,duration:seconds,actions,label,shot});start+=seconds;};
  add(4,Array.from({length:people},()=>actualTheme==='fight'?'approach':'wave'),'Opening');
  while(start<duration-4){
   const length=Math.min(choose([3,4,5],rng),duration-4-start),actions=Array(people).fill('idle');
@@ -61,7 +65,7 @@ export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,r
   for(const name of Object.keys(looks))if(new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i').test(prompt))requestedEffects.push(name);
  }
  if(requestedEffects.length>8){requestedEffects.length=8;warnings.push('Only the first eight named effects are added; add further effects in the editor.');}
- return {version:1,duration,people,theme:actualTheme,prompt,seed,randomize,effects,requestedEffects,beats,warnings};
+ return {version:2,duration,people,location,lighting,direction,shadows,theme:actualTheme,prompt,seed,randomize,effects,requestedEffects,beats,warnings};
 }
 
 // Absolute joint angles: native rigs use world angles, rather than parent-relative angles.
@@ -108,6 +112,7 @@ export function* generateScene(options={}){
  const plan=planScene(options),report=emptyDocument(),fps=24,total=plan.duration*fps;
  const supplied=options.figure;if(supplied&&!compatibleSceneFigure(supplied))throw new Error('This figure needs the standard ten-segment humanoid rig. Choose the built-in characters.');
  report.fps=fps;report.figure_types=Array.from({length:plan.people},(_,i)=>{const figure=structuredClone(supplied??defaultFigure());figure.figure_type_id=i+1;figure.name=['Red','Blue','Purple','Green'][i];if(!supplied)for(const s of figure.segments)s.color_rgb=palettes[i];return figure;});
+ const art=buildScenery(plan),shadow=plan.shadows?createContactShadow():null;
  report.keyframes=[];report._styk.name=`${plan.theme[0].toUpperCase()+plan.theme.slice(1)} scene · ${plan.duration}s`;report._styk.sceneGenerator=plan;
  const camera=[],vfx=[],rng=random(plan.seed+17),positions=Array.from({length:plan.people},(_,i)=>200+i*560/Math.max(1,plan.people-1)),down=Array(plan.people).fill(false);
  for(let b=0;b<plan.beats.length;b++){
@@ -120,7 +125,7 @@ export function* generateScene(options={}){
   if(plan.effects){
    const strike=beat.actions.findIndex(a=>['punch','kick','fall'].includes(a));
    if(strike>=0){const tick=Math.round((beat.start+beat.duration*.5)*fps),duration=12;
-    camera.push(createCameraMotion('impact',`impact-${b}`,tick,duration));
+    if(camera.length<220){const impact=createCameraMotion('impact',`impact-${b}`,tick,duration);impact.params.strength=plan.direction==='calm'?.25:plan.direction==='intense'?1:.55;camera.push(impact);}
     const target=beat.actions[strike]==='fall'?strike:opponent(strike,plan.people),clip=createVfxClip({kind:'figure',uid:target+1},'tint',`hit-${b}`,`hit-fx-${b}`,{start:tick,duration:6});
     clip.name='Hit flash';clip.effects=VFX_PRESETS['Hit flash'].effects.map(([type,params],i)=>{const fx=createVfx(type,`hit-${b}-${i}`);Object.assign(fx.params,params);return fx;});clip.fadeOut=5;vfx.push(clip);
    }
@@ -134,11 +139,15 @@ export function* generateScene(options={}){
   const count=beat.duration*fps;
   for(let f=0;f<count;f++){
    const u=f/(count-1),objects=report.figure_types.map((figure,i)=>{const p=pose(figure,beat.actions[i],u,from[i],positions[i],directions[i],down[i]);return createObject(figure,i+1,p.x,p.y,{angles:p.angles});});
+   if(shadow){const shadows=objects.map(o=>{const scale=Math.max(.45,1-Math.max(0,320-o.root_y)/220);return createObject(shadow,49+o.unique_id,o.root_x-26*scale,442,{scale});});objects.push(...shadows);}
    report.keyframes.push({...createFrame(objects),_styk:{easing:{interpolation:'hold'}}});
   }
   for(let i=0;i<down.length;i++){if(beat.actions[i]==='fall')down[i]=true;else if(beat.actions[i]==='get up')down[i]=false;}
   yield {progress:report.keyframes.length/total,label:beat.label};
  }
+ if(shadow)report.figure_types.push(shadow);
+ directScene(report,plan);installScenery(report,plan,art);
+ report._styk.palette=[...new Set(report.figure_types.flatMap(f=>[...f.segments,...(f.polyfills??[])].map(s=>s.color_rgb)).concat(art.background?.paint.stops.map(s=>s.color)??[]).filter(Boolean).map(c=>'#'+c.map(n=>n.toString(16).padStart(2,'0')).join('')))].slice(0,64);
  report._styk.cameraMotion={version:1,clips:camera};report._styk.vfxClips={version:1,clips:vfx};validateCameraMotion(report._styk.cameraMotion);validateVfxClips(report._styk.vfxClips);
  return report;
 }

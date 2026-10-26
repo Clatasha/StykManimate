@@ -63,6 +63,7 @@ jobs:
         run: |
           npm run test:boot:packaged
           node tests/scene-generator.browser.mjs
+          node tests/scene-backgrounds.browser.mjs
       - name: Upload preview
         uses: actions/upload-artifact@v4
         with:
