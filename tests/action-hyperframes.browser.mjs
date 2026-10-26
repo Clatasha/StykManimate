@@ -12,6 +12,18 @@ try{
  await mkdir('artifacts',{recursive:true});await page.goto(process.env.STYK_URL||backend.origin);await page.waitForFunction(()=>window.styk?.ready,{timeout:60000});
  await page.evaluate(()=>{void styk.actions['generate-scene']();});const dialog=page.locator('.scene-dialog');await dialog.waitFor();await dialog.locator('[data-demo]').click();await dialog.locator('[data-open]').waitFor({state:'visible',timeout:60000});
  assert.match(await dialog.locator('[data-status]').textContent(),/15 seconds · 360 editable frames/);
+ const ready=()=>dialog.locator('[data-open]').waitFor({state:'visible',timeout:60000});
+ const firstSeed=await dialog.locator('[data-field="seed"]').inputValue(),firstSequence=await dialog.locator('.scene-storyboard').textContent();
+ await dialog.locator('[data-demo]').click();await ready();
+ assert.notEqual(await dialog.locator('[data-field="seed"]').inputValue(),firstSeed);
+ assert.notEqual(await dialog.locator('.scene-storyboard').textContent(),firstSequence);
+ await dialog.locator('[data-field="seed"]').fill('314');await dialog.locator('[data-field="fightStyle"]').selectOption('acrobatics');
+ assert.equal(await dialog.locator('[data-field="lockSeed"]').isChecked(),true);
+ await dialog.locator('[data-demo]').click();await ready();const locked=await dialog.locator('.scene-storyboard').textContent();
+ await dialog.locator('[data-demo]').click();await ready();
+ assert.equal(await dialog.locator('[data-field="seed"]').inputValue(),'314');assert.equal(await dialog.locator('.scene-storyboard').textContent(),locked);
+ await page.screenshot({path:'artifacts/variety-generator.png'});
+
  await dialog.locator('[data-hyperframes]').click();const presentation=page.locator('.scene-presentation-dialog');await presentation.waitFor();
  try{await page.waitForFunction(()=>document.querySelector('.scene-presentation [role="status"]')?.textContent.includes('Ready'),{timeout:30000});}catch(error){console.log('DEBUG',messages,errors);for(const f of page.frames()){try{console.log(f.url(),await f.evaluate(()=>({ready:document.readyState,player:!!window.__player,sources:window.__hfHasFrameSources?.(),native:window.stykPresentationTick,html:document.body?.innerHTML.slice(0,200),srcdoc:document.querySelector('hyperframes-player')?.getAttribute('srcdoc')?.length})));}catch{}}throw error;}
  const outer=page.frames().find(f=>f.url().includes('hyperframes-preview.html'));
@@ -23,7 +35,12 @@ try{
  assert.equal(await outer.evaluate(()=>!!document.querySelector('hyperframes-player').shadowRoot.querySelector('iframe')),true);
  const downloadPromise=page.waitForEvent('download');await presentation.getByRole('button',{name:'Save Hyperframes HTML'}).click();const download=await Promise.race([downloadPromise,presentation.locator('.ui-dialog-error').waitFor({state:'visible'}).then(async()=>{throw new Error(await presentation.locator('.ui-dialog-error').textContent());})]);await download.saveAs('artifacts/action-hyperframes.html');
  await presentation.locator('.ui-dialog-close').click();await dialog.locator('[data-open]').click();await dialog.waitFor({state:'detached'});
- assert.equal(await page.evaluate(()=>styk.editor.totalTicks),360);assert.equal(await page.evaluate(()=>styk.editor.dirty),true);
+ assert.equal(await page.evaluate(()=>styk.editor.report._styk.sceneGenerator.fightStyle),'acrobatics');assert.equal(await page.evaluate(()=>styk.editor.totalTicks),360);assert.equal(await page.evaluate(()=>styk.editor.dirty),true);
  await page.evaluate(()=>{styk.editor.select(1);styk.editor.moveSelection(10,0);void styk.actions['hyperframes-presentation']();});await presentation.waitFor();await page.waitForFunction(()=>document.querySelector('.scene-presentation [role="status"]')?.textContent.includes('Ready'),{timeout:30000});await presentation.locator('.ui-dialog-close').click();
- assert.deepEqual(errors,[]);console.log('PASS action demo → genuine Hyperframes player → deterministic seeks → self-contained HTML; native editability');
+ await page.evaluate(()=>{void styk.actions['generate-scene']();});await dialog.waitFor();
+ await dialog.locator('[data-field="prompt"]').fill('Red punches, blue kicks.');
+ await dialog.locator('[data-generate]').click();await ready();const promptSeed=await dialog.locator('[data-field="seed"]').inputValue();
+ await dialog.locator('[data-generate]').click();await ready();assert.notEqual(await dialog.locator('[data-field="seed"]').inputValue(),promptSeed);
+ await dialog.locator('.ui-dialog-close').click();
+ assert.deepEqual(errors,[]);console.log('PASS fresh seeds, locked repeat, fighting styles; action demo → genuine Hyperframes player → deterministic seeks → self-contained HTML; native editability');
 }finally{await browser.close();backend?.stop();}

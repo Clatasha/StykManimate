@@ -4,7 +4,7 @@ File → Import → Generate animated scene creates a new editable project throu
 
 Choose 60 seconds, 120 seconds, or a whole custom length from 60 to 600 seconds. Scenes use 24 FPS with one to four characters. Prompt generation recognizes walk, run/chase, punch/jab, kick, block, dodge, jump, fall/trip, get up/recover, wave, celebrate/dance, and idle/wait. Red, Blue, Purple and Green select actors (or Character 1–4). Actions execute in their mentioned order; the pattern repeats with changing reactions over the full duration. Opening and ending sections frame the sequence, and recovery is inserted after falls. This is a bounded local action composer, not a general language model. Unrecognized story details, exact counts, props and dialogue are not interpreted. A prompt with no supported action is rejected instead of silently generating an unrelated scene.
 
-Random generation uses Fight, Chase, Comedy, Everyday or Surprise themes. Each click chooses a new variation seed; enter a saved seed and use a prompt to repeat prompt choreography. The scene's settings, seed and sequence are saved under `_styk.sceneGenerator`. Opening an animation does not require any generator runtime or downloaded models.
+Random generation uses Fight, Chase, Comedy, Everyday or Surprise themes. Every generation, including prompts and short demos, chooses a fresh variation seed by default. Check Lock variation seed to reproduce the same scene with the same settings; editing the seed checks this automatically. Random generation can also be reproduced with a locked seed. The scene's settings, seed and sequence are saved under `_styk.sceneGenerator`. Opening an animation does not require any generator runtime or downloaded models.
 
 The Figures selector offers built-in colored figures and compatible existing project figures: the standard ten-segment humanoid topology, without movieclip, text or image assets. Other rigs remain available for manual editing in the editor. The generator does not attempt to identify arbitrary anatomy.
 
@@ -20,7 +20,7 @@ Camera style offers Locked wide, Calm, Cinematic and Intense. Calm keeps wider f
 
 Scenery and camera choices remain available for 60–600 second scenes with one to four actors. STYK saves preserve the held sources, layers, palette, native camera keys, and effect clips. Video export uses the same drawing and parallax paths as ordinary projects.
 
-The Fight theme also offers connected **Action choreography** and a **15-second fight demo**; see [Hyperframes integration and limits](HYPERFRAMES.md). Classic movements remain available.
+The Fight theme also offers connected **Action choreography** and a **15-second fight demo**; see [Hyperframes integration and limits](HYPERFRAMES.md). Fighting style offers Mixed martial arts, Boxing, Kickboxing, Acrobatics and Heavy brawler. Attacks, defensive responses, footwork, pace and initiative vary through the scene rather than looping a small combination list. Classic movements remain available.
 
 Generation runs in a disposable worker. Native frames transfer in acknowledged 256 KiB chunks. Cancel or close terminates the worker and discards the unfinished result. No inference service, video upload, model download or network API is involved. Scene preparation time displayed in the dialog includes document transfer; opening, playback and video encoding take additional time. This is not a promise of performance on an untested PC.
 

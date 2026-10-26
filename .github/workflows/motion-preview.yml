@@ -39,7 +39,7 @@ jobs:
         run: |
           npm run build:hyperframes
           npm run check
-          node --test tests/scene-generator.test.mjs tests/hyperframes-composition.test.mjs
+          node --test tests/scene-generator.test.mjs tests/hyperframes-composition.test.mjs tests/fight-variety.test.mjs
       - name: Build standalone runtime
         run: |
           npm run build:frame-scan

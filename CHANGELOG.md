@@ -8,7 +8,7 @@ What's new in each version of StykAnimate.
 
 ### Added
 
-- Connected fight choreography adds quick combinations, counters and aerial moves, with a 15-second demo and a Hyperframes presentation preview and HTML export.
+- Fight generation offers five fighting styles with varied attacks, counters, footwork and pacing, fresh variations on each click, a 15-second demo and Hyperframes preview and HTML export.
 
 - Generate editable scenes from supported action prompts or random themes, with layered backgrounds, lighting choices, automatic camera direction and lengths from one to ten minutes (StykManimate preview).
 - StykAnimate is now open source: its code is on GitHub under the GPL-3.0 license.
