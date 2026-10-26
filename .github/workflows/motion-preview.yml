@@ -37,8 +37,9 @@ jobs:
           python -m pip install -r scripts/requirements-build.txt
       - name: Check scene generation and editor compatibility
         run: |
+          npm run build:hyperframes
           npm run check
-          node --test tests/scene-generator.test.mjs
+          node --test tests/scene-generator.test.mjs tests/hyperframes-composition.test.mjs
       - name: Build standalone runtime
         run: |
           npm run build:frame-scan
@@ -64,6 +65,7 @@ jobs:
           npm run test:boot:packaged
           node tests/scene-generator.browser.mjs
           node tests/scene-backgrounds.browser.mjs
+          node tests/action-hyperframes.browser.mjs
       - name: Upload preview
         uses: actions/upload-artifact@v4
         with:

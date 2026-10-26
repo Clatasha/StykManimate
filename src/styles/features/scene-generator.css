@@ -14,6 +14,9 @@
   .scene-storyboard { min-block-size: 120px; max-block-size: 180px; overflow-y: auto; margin: 0; padding-inline-start: 28px; }
   .scene-storyboard li { padding-block: 4px; }
   .scene-storyboard:empty { display: none; }
+  .scene-presentation-dialog { block-size: min(900px, calc(100dvh - 32px)); }
+  .scene-presentation { display: grid; gap: var(--space-3); }
+  .scene-presentation iframe { width: 100%; height: min(52dvh, 540px); border: 0; }
   .scene-buttons { display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .scene-options [hidden], .scene-buttons [hidden] { display: none; }
 }

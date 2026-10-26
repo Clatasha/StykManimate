@@ -20,6 +20,8 @@ Camera style offers Locked wide, Calm, Cinematic and Intense. Calm keeps wider f
 
 Scenery and camera choices remain available for 60–600 second scenes with one to four actors. STYK saves preserve the held sources, layers, palette, native camera keys, and effect clips. Video export uses the same drawing and parallax paths as ordinary projects.
 
+The Fight theme also offers connected **Action choreography** and a **15-second fight demo**; see [Hyperframes integration and limits](HYPERFRAMES.md). Classic movements remain available.
+
 Generation runs in a disposable worker. Native frames transfer in acknowledged 256 KiB chunks. Cancel or close terminates the worker and discards the unfinished result. No inference service, video upload, model download or network API is involved. Scene preparation time displayed in the dialog includes document transfer; opening, playback and video encoding take additional time. This is not a promise of performance on an untested PC.
 
 Verification: `node --test tests/scene-generator.test.mjs`, `node tests/scene-generator.browser.mjs`, `node tests/scene-backgrounds.browser.mjs`, `npm run check`, `npm run changelog:check`. The browser test covers a complete 60-second native project, playback seeking, cancellation, existing effect data, and saving/reopening through the codec.

@@ -342,6 +342,7 @@ group('app', [
   ['maximize', english["commands.maximize"], 'maximize', {labelKey: "commands.maximize", requires: ['desktop']}],
   ['close', english["commands.close"], 'close', {labelKey: "commands.close", requires: ['desktop'], keywords: ['exit', 'close window']}],
   ['close-dialog', english["commands.closeDialog"], 'close', {...internal, labelKey: "commands.closeDialog"}],
+  ['hyperframes-presentation', 'Hyperframes presentation…', 'export', {keywords:['hyperframes','presentation','html']}],
 ]);
 
 /** Every entry, in declaration order; indexes order them by COMMAND_CATEGORIES, then by this order. */

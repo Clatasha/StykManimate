@@ -1,0 +1,17 @@
+const json=value=>JSON.stringify(value).replaceAll('<','\\u003c');
+const script=value=>value.replace(/<\/script/gi,'<\\/script');
+export function hyperframesComposition(report,{runtime,native,baseURL,licenses=''}={}){
+ const plan=report?._styk?.sceneGenerator,fps=report?.fps,duration=(report?._styk?.layerSheet?.duration??report?.keyframes?.reduce((n,f)=>n+f.duration_raw,0))/fps,width=report?.canvas_width,height=report?.canvas_height;
+ if(!plan||!Number.isFinite(duration)||duration<1||duration>120)throw new Error('Hyperframes presentations support generated scenes up to two minutes. Try the 15-second fight demo.');
+ if(![width,height].every(n=>Number.isInteger(n)&&n>0&&n<=4096))throw new Error('Presentation dimensions must be between 1 and 4096 pixels.');
+ if(report.figure_types.some(f=>f.image_assets?.length||f.text_assets?.length||f._styk?.drawing||f._styk?.movieclip)||report._styk?.audio?.tracks?.some(t=>t.clips?.length))throw new Error('This Hyperframes presentation supports vector scenes. Use normal video export for imported media, text, drawings, movie clips or audio.');
+ const attrs=`data-composition-id="styk-fight" data-start="0" data-duration="${duration}" data-width="${width}" data-height="${height}"`;
+ const accents=(plan.effects?plan.beats:[]).filter(b=>b.impact!==null&&b.impact!==undefined).map((b,i)=>`<div id="impact-${i}" class="clip accent" data-impact-accent data-track-kind="graphics" data-track-index="1" data-start="${(Math.round(b.start*24)+b.impact)/fps}" data-duration="0.16"><div></div></div>`).join('');
+ const asset=name=>new URL(`/vendor/hyperframes/${name}`,baseURL).href;
+ return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#102039}#styk-fight{position:absolute;inset:0;overflow:hidden}canvas{position:absolute;inset:0;width:100%;height:100%}.accent{position:absolute;inset:0;pointer-events:none;z-index:2}.accent>div{position:absolute;inset:0;opacity:0;background:linear-gradient(108deg,transparent 22%,rgba(255,194,128,.15) 40%,rgba(255,255,255,.9) 51%,rgba(141,216,255,.15) 62%,transparent 80%)}</style></head><body><div id="styk-fight" ${attrs}><canvas id="styk-canvas" class="clip" data-start="0" data-duration="${duration}" data-track-index="0" width="${width}" height="${height}"></canvas>${accents}</div><script type="application/json" id="styk-report">${json(report)}</script>${licenses?`<script type="text/plain" id="presentation-licenses">${script(licenses)}</script>`:''}${runtime?`<script>${script(runtime)}</script><script>${script(native)}</script>`:`<script src="${asset('runtime.js')}"></script><script src="${asset('native.js')}"></script>`}</body></html>`;
+}
+export async function hyperframesHTML(report,{signal}={}){
+ const [runtime,native,licenseData]=await Promise.all(['runtime.js','native.js','licenses.json'].map(async name=>{const response=await fetch(new URL(`../vendor/hyperframes/${name}`,import.meta.url),{signal});if(!response.ok)throw new Error('Presentation assets are unavailable. Run npm run build:hyperframes when using the source checkout.');return response.text();}));
+ const {apache,gpl}=JSON.parse(licenseData);
+ return new Blob([hyperframesComposition(report,{runtime,native,licenses:'Hyperframes 0.8.200 — Copyright HeyGen, Inc.\n'+apache+'\nStykManimate native painter — GPL-3.0-or-later\nSource: https://github.com/Clatasha/StykManimate\n'+gpl})],{type:'text/html'});
+}

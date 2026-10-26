@@ -8,6 +8,8 @@ Open [Windows Preview builds](https://github.com/Clatasha/StykManimate/actions/w
 
 Choose **File → Import → Generate animated scene…**. Enter supported actions or click **Generate random scene**. Choose 60 seconds, 2 minutes or a custom 60–600 seconds, one to four characters and a theme. Choose a layered location, day/sunset/night lighting, camera style and optional contact shadows; the location preview updates immediately. Open the result to play, edit, save and export through the normal editor.
 
+**Action choreography** adds quick fight combinations, counters and aerial moves. Try **15-second fight demo**, then **Hyperframes preview / HTML**. Longer 60–600 second scenes remain available. [Hyperframes integration and limits](docs/HYPERFRAMES.md).
+
 Example: “Red walks, red punches, blue dodges, blue kicks, red falls, red gets up. Add camera shake and glow.”
 
 This local composer uses supported action words and reusable choreography. It does not interpret arbitrary stories, dialogue, props or exact counts. It repeats and varies the requested actions to fill long scenes. Camera moves and effect clips remain editable. Video motion capture has been removed. [Supported actions and limits](docs/SCENE-GENERATOR.md).

@@ -5,11 +5,12 @@ import {createVfxClip,validateVfxClips} from './vfx-clips.mjs';
 import {createVfx,VFX_REGISTRY} from './vfx.mjs';
 import {VFX_PRESETS} from './vfx-presets.mjs';
 import {buildScenery,installScenery,createContactShadow,SCENE_LOCATIONS,SCENE_LIGHTING} from './scene-backgrounds.mjs';
+import {fightBeats,actionPose,blendActionPose} from './fight-choreography.mjs';
 import {directScene,SCENE_DIRECTIONS} from './scene-direction.mjs';
 
-export const SCENE_ACTIONS=['walk','run','punch','kick','block','dodge','jump','fall','get up','wave','celebrate','idle'];
+export const SCENE_ACTIONS=['walk','run','punch','kick','block','dodge','jump','fall','get up','wave','celebrate','idle','cross','hook','uppercut','duck','sweep','flip','dash','aerial kick'];
 export const SCENE_THEMES=['fight','chase','comedy','everyday','surprise'];
-const patterns=[['get up',/\b(?:get(?:s|ting)?\s+up|stand(?:s|ing)?\s+up|recover(?:s|ing)?)\b/gi],['walk',/\bwalk(?:s|ing)?\b/gi],['run',/\b(?:run(?:s|ning)?|chas(?:e|es|ing))\b/gi],['punch',/\b(?:punch(?:es|ing)?|jab(?:s|bing)?)\b/gi],['kick',/\bkick(?:s|ing)?\b/gi],['block',/\bblock(?:s|ing)?\b/gi],['dodge',/\bdodg(?:e|es|ing)\b/gi],['jump',/\bjump(?:s|ing)?\b/gi],['fall',/\b(?:fall(?:s|ing)?|trip(?:s|ping)?)\b/gi],['wave',/\bwav(?:e|es|ing)\b/gi],['celebrate',/\b(?:celebrat(?:e|es|ing)|danc(?:e|es|ing))\b/gi],['idle',/\b(?:wait(?:s|ing)?|idle|pause(?:s)?)\b/gi]];
+const patterns=[['uppercut',/\buppercut(?:s|ting)?\b/gi],['cross',/\bcross(?:es)?\b/gi],['hook',/\bhook(?:s|ing)?\b/gi],['duck',/\bduck(?:s|ing)?\b/gi],['sweep',/\b(?:sweep(?:s|ing)?|swept)\b/gi],['flip',/\bflip(?:s|ping)?\b/gi],['dash',/\b(?:dash(?:es|ing)?|sprint(?:s|ing)?)\b/gi],['aerialkick',/\b(?:flying|aerial)\s+kick(?:s|ing)?\b/gi],['get up',/\b(?:get(?:s|ting)?\s+up|stand(?:s|ing)?\s+up|recover(?:s|ing)?)\b/gi],['walk',/\bwalk(?:s|ing)?\b/gi],['run',/\b(?:run(?:s|ning)?|chas(?:e|es|ing))\b/gi],['punch',/\b(?:punch(?:es|ing)?|jab(?:s|bing)?)\b/gi],['kick',/\bkick(?:s|ing)?\b/gi],['block',/\bblock(?:s|ing)?\b/gi],['dodge',/\bdodg(?:e|es|ing)\b/gi],['jump',/\bjump(?:s|ing)?\b/gi],['fall',/\b(?:fall(?:s|ing)?|trip(?:s|ping)?)\b/gi],['wave',/\bwav(?:e|es|ing)\b/gi],['celebrate',/\b(?:celebrat(?:e|es|ing)|danc(?:e|es|ing))\b/gi],['idle',/\b(?:wait(?:s|ing)?|idle|pause(?:s)?)\b/gi]];
 const looks={...Object.fromEntries(Object.entries(VFX_REGISTRY).map(([type,definition])=>[definition.name,{effects:[[type,{}]],scene:Boolean(definition.scene)}])),...VFX_PRESETS};
 export const SCENE_EFFECTS=Object.keys(looks);
 const palettes=[[229,69,81],[46,139,232],[125,83,210],[34,164,117]];
@@ -22,16 +23,18 @@ const choose=(list,rng)=>list[Math.floor(rng()*list.length)];
 export function compatibleSceneFigure(figure){
  const base=defaultFigure();return figure?.segments?.length===10&&!figure._styk?.movieclip&&figure.segments.every((s,i)=>s.segment_id===base.segments[i].segment_id&&s.parent_id===base.segments[i].parent_id&&s.length>0)&&!figure.image_assets?.length&&!figure.text_assets?.length;
 }
-export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,randomize=false,effects=true,location='rooftop',lighting='night',direction='cinematic',shadows=true}={}){
- if(!Number.isInteger(duration)||duration<60||duration>600)throw new Error('Choose a whole length from 60 to 600 seconds.');
+export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,randomize=false,effects=true,location='rooftop',lighting='night',direction='cinematic',shadows=true,movement='action',sample=false}={}){
+ if(!Number.isInteger(duration)||(!(sample&&duration===15)&&(duration<60||duration>600)))throw new Error('Choose a whole length from 60 to 600 seconds.');
  if(!Number.isInteger(people)||people<1||people>4)throw new Error('Choose one to four characters.');
  for(const [value,choices,label] of [[location,SCENE_LOCATIONS,'location'],[lighting,SCENE_LIGHTING,'lighting'],[direction,SCENE_DIRECTIONS,'camera style']])if(!Object.hasOwn(choices,value))throw new Error(`Choose an available ${label}.`);
+ if(!['action','classic'].includes(movement))throw new Error('Choose Action choreography or Classic movements.');
+ if(typeof sample!=='boolean')throw new Error('Choose whether this is a short fight sample.');
  if(typeof shadows!=='boolean')throw new Error('Choose whether to add contact shadows.');
  if(!SCENE_THEMES.includes(theme))throw new Error('Choose an available theme.');
  if(typeof prompt!=='string'||prompt.length>2000)throw new Error('Keep the prompt under 2,000 characters.');
  if(!Number.isInteger(seed)||seed<0||seed>2147483647)throw new Error('Choose a seed from 0 to 2147483647.');
  const rng=random(seed),actualTheme=theme==='surprise'?choose(SCENE_THEMES.slice(0,-1),rng):theme;
- const matches=patterns.flatMap(([action,re])=>[...prompt.matchAll(re)].map(m=>({action,index:m.index}))).sort((a,b)=>a.index-b.index);
+ const matches=patterns.flatMap(([action,re])=>[...prompt.matchAll(re)].map(m=>({action,index:m.index,end:m.index+m[0].length}))).sort((a,b)=>a.index-b.index||b.end-a.end).filter((m,i,list)=>!list.slice(0,i).some(p=>p.index<=m.index&&p.end>m.index));
  const commands=matches.map((m,i)=>{
   const preceding=prompt.slice(i?matches[i-1].index:0,m.index);
   const actors=[...preceding.matchAll(/\b(red|blue|purple|green|character\s*[1-4])\b/gi)];
@@ -43,7 +46,7 @@ export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,r
  if(!randomize)warnings.push('Uses supported action words in order; extra story details, props, dialogue and exact repetition counts are not interpreted.');
  if(commands.some(c=>c.action==='fall')&&!commands.some(c=>c.action==='get up'))warnings.push('Recovery is added after falls so the scene can continue.');
  const pools={fight:['punch','block','kick','dodge','punch','jump'],chase:['run','run','jump','dodge','run'],comedy:['walk','wave','jump','fall','celebrate'],everyday:['walk','wave','idle','jump','celebrate']};
- const beats=[],down=Array(people).fill(false);let start=0,commandIndex=0,last='';
+ let beats=[];const down=Array(people).fill(false);let start=0,commandIndex=0,last='';
  const add=(seconds,actions,label)=>{const shot=direction==='off'?'Locked wide':start===0?'Establishing wide':label==='Ending'?'Closing wide':actions.some(a=>['run','walk','jump','approach'].includes(a))?'Wide tracking':actions.some(a=>['punch','kick','block','dodge'].includes(a))?'Medium exchange':'Reaction / recovery';beats.push({start,duration:seconds,actions,label,shot});start+=seconds;};
  add(4,Array.from({length:people},()=>actualTheme==='fight'?'approach':'wave'),'Opening');
  while(start<duration-4){
@@ -60,12 +63,14 @@ export function planScene({duration=60,people=2,theme='fight',prompt='',seed=1,r
   add(length,actions,actions.map((a,i)=>`${['Red','Blue','Purple','Green'][i]} ${a}`).filter(s=>!s.endsWith(' idle')).join(' · ')||'Pause');
  }
  add(4,down.map(d=>d?'get up':'celebrate'),'Ending');
+ const action=movement==='action'&&actualTheme==='fight';
+ if(action)beats=fightBeats(duration*24,people,rng,randomize?[]:commands);
  const requestedEffects=[];
  if(effects){
   for(const name of Object.keys(looks))if(new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i').test(prompt))requestedEffects.push(name);
  }
  if(requestedEffects.length>8){requestedEffects.length=8;warnings.push('Only the first eight named effects are added; add further effects in the editor.');}
- return {version:2,duration,people,location,lighting,direction,shadows,theme:actualTheme,prompt,seed,randomize,effects,requestedEffects,beats,warnings};
+ return {version:3,duration,people,movement,action,sample,location,lighting,direction,shadows,theme:actualTheme,prompt,seed,randomize,effects,requestedEffects,beats,warnings};
 }
 
 // Absolute joint angles: native rigs use world angles, rather than parent-relative angles.
@@ -114,35 +119,40 @@ export function* generateScene(options={}){
  report.fps=fps;report.figure_types=Array.from({length:plan.people},(_,i)=>{const figure=structuredClone(supplied??defaultFigure());figure.figure_type_id=i+1;figure.name=['Red','Blue','Purple','Green'][i];if(!supplied)for(const s of figure.segments)s.color_rgb=palettes[i];return figure;});
  const art=buildScenery(plan),shadow=plan.shadows?createContactShadow():null;
  report.keyframes=[];report._styk.name=`${plan.theme[0].toUpperCase()+plan.theme.slice(1)} scene · ${plan.duration}s`;report._styk.sceneGenerator=plan;
- const camera=[],vfx=[],rng=random(plan.seed+17),positions=Array.from({length:plan.people},(_,i)=>200+i*560/Math.max(1,plan.people-1)),down=Array(plan.people).fill(false);
+ const camera=[],vfx=[],rng=random(plan.seed+17),positions=Array.from({length:plan.people},(_,i)=>200+i*560/Math.max(1,plan.people-1)),down=Array(plan.people).fill(false),lastPose=Array(plan.people).fill(null),impactStride=Math.max(1,Math.ceil(plan.beats.filter(b=>b.impact!==null&&b.impact!==undefined).length/190));let impactIndex=0;
  for(let b=0;b<plan.beats.length;b++){
   const beat=plan.beats[b],from=positions.slice(),directions=from.map((x,i)=>plan.people===1?1:(from[opponent(i,plan.people)]>=x?1:-1));
   for(let i=0;i<positions.length;i++){
-   const action=beat.actions[i];if(['punch','kick'].includes(action)&&plan.people>1)positions[i]=clamp(from[opponent(i,plan.people)]-directions[i]*120,170,790);
+   const action=beat.actions[i];if(plan.action&&['dash','retreat','aerialkick','uppercut','cross','hook','sweep','launched'].includes(action)){
+    if(action==='dash')positions[i]=b===0?(plan.people===1?480:plan.people>2?230+i*120+Math.floor(i/2)*140:410+i*140):clamp(from[opponent(i,plan.people)]-directions[i]*130,160,800);
+    else if(action==='retreat')positions[i]=clamp(from[i]-directions[i]*85,160,800);
+    else if(action==='launched')positions[i]=clamp(from[i]-directions[i]*115,160,800);
+    else if(['uppercut','cross','hook','sweep','aerialkick'].includes(action)&&plan.people>1)positions[i]=clamp(from[opponent(i,plan.people)]-directions[i]*(action==='uppercut'?110:130),160,800);
+   }else if(['punch','kick'].includes(action)&&plan.people>1)positions[i]=clamp(from[opponent(i,plan.people)]-directions[i]*120,170,790);
    else if(action==='approach')positions[i]=plan.people===1?480:plan.people>2?230+i*120+Math.floor(i/2)*140:420+i*120;
    else if(['walk','run'].includes(action))positions[i]=clamp(from[i]+(from[i]>700?-1:from[i]<260?1:choose([-1,1],rng))*(action==='run'?180:85),170,790);
   }
   if(plan.effects){
-   const strike=beat.actions.findIndex(a=>['punch','kick','fall'].includes(a));
-   if(strike>=0){const tick=Math.round((beat.start+beat.duration*.5)*fps),duration=12;
-    if(camera.length<220){const impact=createCameraMotion('impact',`impact-${b}`,tick,duration);impact.params.strength=plan.direction==='calm'?.25:plan.direction==='intense'?1:.55;camera.push(impact);}
+   const strike=beat.actions.findIndex(a=>['punch','cross','hook','uppercut','kick','aerialkick','sweep','fall'].includes(a));
+   if(strike>=0){const tick=Math.round(beat.start*fps)+(beat.impact??Math.round(beat.duration*fps*.5)),duration=12;
+    if(camera.length<200&&(!plan.action||impactIndex++%impactStride===0)){const impact=createCameraMotion('impact',`impact-${b}`,tick,duration);impact.params.strength=plan.direction==='calm'?.25:plan.direction==='intense'?1:.55;camera.push(impact);}
     const target=beat.actions[strike]==='fall'?strike:opponent(strike,plan.people),clip=createVfxClip({kind:'figure',uid:target+1},'tint',`hit-${b}`,`hit-fx-${b}`,{start:tick,duration:6});
     clip.name='Hit flash';clip.effects=VFX_PRESETS['Hit flash'].effects.map(([type,params],i)=>{const fx=createVfx(type,`hit-${b}-${i}`);Object.assign(fx.params,params);return fx;});clip.fadeOut=5;vfx.push(clip);
    }
    for(const name of plan.requestedEffects)if(b===1||b===Math.floor(plan.beats.length/2)){
     const target=looks[name].scene?{kind:'scene'}:{kind:'figure',uid:1};
-    const clip=createVfxClip(target,'tint',`look-${b}-${vfx.length}`,`look-fx-${b}`,{start:beat.start*fps,duration:beat.duration*fps});clip.name=name;clip.fadeIn=6;clip.fadeOut=6;
+    const clip=createVfxClip(target,'tint',`look-${b}-${vfx.length}`,`look-fx-${b}`,{start:Math.round(beat.start*fps),duration:Math.round(beat.duration*fps)});clip.name=name;clip.fadeIn=6;clip.fadeOut=6;
     clip.effects=looks[name].effects.map(([type,params],i)=>{const fx=createVfx(type,`look-${b}-${vfx.length}-${i}`);Object.assign(fx.params,params);return fx;});vfx.push(clip);
    }
-   if(/\b(?:shake|handheld|zoom)\b/i.test(plan.prompt)&&b===1)camera.push(createCameraMotion(/handheld/i.test(plan.prompt)?'handheld':/zoom/i.test(plan.prompt)?'pulse':'shake','prompt-camera',beat.start*fps,beat.duration*fps));
+   if(/\b(?:shake|handheld|zoom)\b/i.test(plan.prompt)&&b===1)camera.push(createCameraMotion(/handheld/i.test(plan.prompt)?'handheld':/zoom/i.test(plan.prompt)?'pulse':'shake','prompt-camera',Math.round(beat.start*fps),Math.round(beat.duration*fps)));
   }
-  const count=beat.duration*fps;
+  const count=Math.round(beat.duration*fps),before=lastPose.slice();
   for(let f=0;f<count;f++){
-   const u=f/(count-1),objects=report.figure_types.map((figure,i)=>{const p=pose(figure,beat.actions[i],u,from[i],positions[i],directions[i],down[i]);return createObject(figure,i+1,p.x,p.y,{angles:p.angles});});
+   const u=f/Math.max(1,count-1),objects=report.figure_types.map((figure,i)=>{let p=plan.action?actionPose(figure,beat.actions[i],u,from[i],positions[i],directions[i]):pose(figure,({cross:'punch',hook:'punch',uppercut:'punch',duck:'dodge',sweep:'kick',flip:'jump',dash:'run',aerialkick:'kick'}[beat.actions[i]]??beat.actions[i]),u,from[i],positions[i],directions[i],down[i]);if(plan.action&&before[i]&&f<3)p=blendActionPose(before[i],p,f/3);lastPose[i]=p;return createObject(figure,i+1,p.x,p.y,{angles:p.angles});});
    if(shadow){const shadows=objects.map(o=>{const scale=Math.max(.45,1-Math.max(0,320-o.root_y)/220);return createObject(shadow,49+o.unique_id,o.root_x-26*scale,442,{scale});});objects.push(...shadows);}
    report.keyframes.push({...createFrame(objects),_styk:{easing:{interpolation:'hold'}}});
   }
-  for(let i=0;i<down.length;i++){if(beat.actions[i]==='fall')down[i]=true;else if(beat.actions[i]==='get up')down[i]=false;}
+  for(let i=0;i<down.length;i++){if(plan.action)positions[i]=lastPose[i].x;if(beat.actions[i]==='fall')down[i]=true;else if(beat.actions[i]==='get up')down[i]=false;}
   yield {progress:report.keyframes.length/total,label:beat.label};
  }
  if(shadow)report.figure_types.push(shadow);

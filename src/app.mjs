@@ -4646,7 +4646,7 @@ const actions = {
   },
   'generate-scene': () => {
     if (builderMode?.active) return toast('Finish your figure before generating a scene.'); pause();
-    return showSceneGenerator({overlays,figures:editor.report.figure_types,onImport:async report=>{
+    return showSceneGenerator({overlays,saveBlob:exportFlow.saveBlob,figures:editor.report.figure_types,onImport:async report=>{
       const accepted=await acceptImport({document:report,kind:'styk'},`${report._styk.name}.styk`);
       if(accepted){editor.seek(0);editor.select(1);editor.dirty=true;}
       return accepted;
@@ -6901,3 +6901,6 @@ installColorPickers((input, event) => {
     const field=document.getElementById(opacityId);if(field){field.value=paint.stops[0].opacity*100;field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));}
   }};
 }, {surface:()=>overlay,sample:sampleCanvasColor});
+
+// Hyperframes uses the current native document, including subsequent pose edits.
+actions['hyperframes-presentation']=async()=>{pause();if(!editor.report._styk?.sceneGenerator)return toast('Generate a scene before opening a Hyperframes presentation.');const {showHyperframes}=await import('./hyperframes-dialog.mjs');return showHyperframes({report:editor.report,overlays,saveBlob:exportFlow.saveBlob});};

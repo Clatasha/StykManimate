@@ -32,3 +32,7 @@ Pivot Animator and Stick Nodes are the property of their respective owners. Styk
 ## StykManimate scene generator
 
 StykManimate retains the original StykAnimate GPL-3.0-or-later code and notices. Scene generation uses the editor’s native figures, camera moves and effect presets; no additional motion models or inference packages are bundled.
+
+## Hyperframes presentation
+
+The optional presentation uses Hyperframes core and player 0.8.200 from [HeyGen Hyperframes](https://github.com/heygen-com/hyperframes), licensed under Apache-2.0. Its license is copied into `vendor/hyperframes/LICENSE` during the build, and upstream runtime/player assets retain their notices. The application’s native painter and choreography remain GPL-3.0-or-later. The impact accent was informed by the Hyperframes editorial-flash-overlay catalogue example and is implemented as a local seekable browser animation.

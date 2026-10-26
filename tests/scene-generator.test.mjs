@@ -10,7 +10,7 @@ import {sceneActorBounds} from '../src/scene-direction.mjs';
 import {validateLayerState} from '../src/layers.mjs';
 import {validateLayerSheet} from '../src/layer-sheet.mjs';
 import {validateVfxClips} from '../src/vfx-clips.mjs';
-function generate(options){const g=generateScene({location:'none',direction:'off',shadows:false,...options});let next;do{next=g.next();}while(!next.done);return next.value;}
+function generate(options){const g=generateScene({movement:'classic',location:'none',direction:'off',shadows:false,...options});let next;do{next=g.next();}while(!next.done);return next.value;}
 test('60 second random scene has a complete editable native timeline, continuous roots and finite poses',()=>{
  const report=generate({randomize:true,seed:12});validateScene(report);validateCameraMotion(report._styk.cameraMotion);validateVfxClips(report._styk.vfxClips);
  const e=new Editor({demo:false,layerTimeline:true}).load(report);assert.equal(e.totalTicks,1440);assert.equal(report.keyframes.length,1440);
@@ -78,4 +78,19 @@ test('long scenes keep scenery poses once; plain canvas, locked camera and shado
  const long=generate({duration:600,people:4,randomize:true,location:'forest',shadows:true,direction:'cinematic'});assert.equal(long.keyframes.length,14400);assert.equal(long._styk.frameSources['generated-scenery'].objects.length,4);assert.equal(long.keyframes[0].objects.length,8);assert.ok(long.figure_types.reduce((n,f)=>n+f.segments.length,0)<5000);
  const plain=generate({randomize:true,location:'none',shadows:false,direction:'off',effects:false});assert.equal(plain.figure_types.length,2);assert.ok(plain.keyframes.every(f=>f.camera.is_default));assert.equal(plain._styk.frameSources,undefined);
  for(const key of ['location','lighting','direction'])assert.throws(()=>planScene({[key]:'unknown',randomize:true}),/Choose an available/);
+});
+test('action fight uses connected fast combinations, launches and acrobatics at native timing',()=>{
+ const r=generate({duration:15,sample:true,movement:'action',randomize:true,seed:17,direction:'cinematic'}),p=r._styk.sceneGenerator;
+ assert.equal(r.keyframes.length,360);assert.ok(p.beats.length>=16);assert.ok(p.beats.some(b=>b.actions.includes('cross')));assert.ok(p.beats.some(b=>b.actions.includes('aerialkick')||b.actions.includes('uppercut')));
+ assert.ok(p.beats.filter(b=>b.impact!==null).length>=5);
+ for(const [i,b] of p.beats.entries()){assert.equal(b.tick,Math.round(b.start*24));assert.equal(b.count,Math.round(b.duration*24));if(i)assert.equal(b.tick,p.beats[i-1].tick+p.beats[i-1].count);}
+ for(const f of r.keyframes)for(const o of f.objects)assert.ok([o.root_x,o.root_y,...o.angles].every(Number.isFinite));
+ const full=generate({movement:'action',randomize:true,duration:60});assert.equal(full.keyframes.length,1440);assert.ok(full._styk.sceneGenerator.beats.length>60);
+});
+test('action scene variants never emit a fractional frame or incomplete tail',()=>{
+ for(let seed=0;seed<24;seed++){
+  const r=generate({duration:15,sample:true,movement:'action',randomize:true,people:1+seed%4,seed});assert.equal(r.keyframes.length,360);validateScene(r);validateLayerSheet(r);validateCameraMotion(r._styk.cameraMotion);
+  for(const f of r.keyframes)assert.ok(f.objects.every(o=>o.angles.every(Number.isFinite)));
+ }
+ assert.throws(()=>planScene({duration:15,randomize:true}),/60 to 600/);
 });

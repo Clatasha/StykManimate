@@ -7,6 +7,7 @@ const { Arch } = require('builder-util');
 
 module.exports = async function beforePack(context) {
   await (await import('./build-brand-assets.mjs')).buildBrandAssets();
+  await (await import('./build-hyperframes.mjs')).buildHyperframes();
   const appRoot = context.packager.info.appDir;
   const hash = bytes => createHash('sha256').update(bytes).digest('hex');
   const notes = JSON.parse(await fs.readFile(path.join(appRoot, 'desktop', 'release-info.json'), 'utf8'));

@@ -1,0 +1,19 @@
+# Action choreography and Hyperframes
+
+Generate animated scene → Movement → Action choreography improves the Fight theme. The 15-second fight demo produces 360 editable native frames; ordinary 60–600 second scenes use connected action phrases too. Classic movements remain available for comparison. The short sample is an explicit exception to the normal 60-second minimum, not a replacement for long scenes.
+
+Fight phrases use guard stances, anticipation, jab/cross/hook combinations, ducks, counters, uppercuts, airborne reactions, flying kicks, flips, sweeps and recoveries. Timing is authored in whole frames, with most actions lasting roughly half a second to one second. Seeded variations change the phrase order and attacking side. Supported prompts also accept cross, hook, uppercut, duck, sweep, flip, dash/sprint, and flying/aerial kick. This remains a bounded action composer, not unrestricted natural-language or physically simulated choreography.
+
+After generating, choose Hyperframes preview / HTML. The actual Hyperframes 0.8.200 player and runtime seek the existing native painter through `registerFrameSource`; no alternate stick renderer is maintained. Native camera motion, editable scenery and supported vector effects remain visible. Presentation impact sweeps use finite, seekable browser animations. The saved HTML contains the scene data, native painter and Hyperframes runtime, and does not require a CDN or model download. Keep the STYK project for normal figure, pose, layer and camera editing. File → Import → Hyperframes presentation reopens a presentation from the current generated project, including subsequent pose edits.
+
+The first presentation exporter supports generated vector scenes up to two minutes. Imported images, text, drawings, movie clips and audio are rejected with a clear message; use the existing normal video exporter for those projects. Hyperframes presentation accents are part of the HTML presentation, while the existing native video exporter renders native project effects. This version does not add a separate in-app Hyperframes MP4 encoder. Exported HTML can be used with Hyperframes tooling; `scripts/benchmark-hyperframes.mjs` demonstrates a tested headless Chromium + FFmpeg render from that HTML. The upstream CLI was not available from this environment's package registry, so CLI-specific lint/render behavior is not certified here.
+
+A 15-second 960×540 sample rendered to H.264 at 24 FPS in 27.41 seconds in the development headless Chromium environment, using CPU `libx264 veryfast`. This is one sample, not an RTX 3060 benchmark or a promise about arbitrary shaders or 4K output. Generation and rendering are separate operations.
+
+## Source setup and packaging
+
+Run `npm ci` and `npm run build:hyperframes` before previewing from source. The script builds ignored `vendor/hyperframes` assets from exact pinned dependencies and the native adapter. Packaging rebuilds them automatically. The manifest records the SDK version, asset sizes and hashes, and the upstream license is copied alongside them. Existing locked package versions are preserved.
+
+Document snapshots use acknowledged 256 KiB chunks to an export worker. Serialization and asset embedding occur there; close/cancel terminates the worker. The player lives in an opaque `allow-scripts` sandbox; data arrives only from its parent. The composition serializes user text as JSON with escaped `<`, never executable markup. All scripts used by in-app playback are local files, so the app's script policy remains unchanged.
+
+Verification: scene-generator and hyperframes-composition unit tests, `tests/action-hyperframes.browser.mjs`, and the existing generator/background browser tests. The Hyperframes test checks the real player, reverse/forward deterministic seeking, HTML download, opening the editable native project and reopening a presentation after editing. The benchmark writes its measurements and MP4 to ignored `artifacts/`.

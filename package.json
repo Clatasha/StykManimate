@@ -91,14 +91,18 @@
     "release:prepare": "node scripts/prepare-release.mjs",
     "changelog:check": "node scripts/check-changelog.mjs",
     "release:verify": "node scripts/release-assets.mjs",
-    "release:publish": "node scripts/publish-release.mjs"
+    "release:publish": "node scripts/publish-release.mjs",
+    "build:hyperframes": "node scripts/build-hyperframes.mjs"
   },
   "dependencies": {
     "electron-updater": "6.6.2"
   },
   "devDependencies": {
+    "@hyperframes/core": "0.8.200",
+    "@hyperframes/player": "0.8.200",
     "electron": "39.8.10",
     "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
     "playwright": "1.63.0",
     "pyodide": "314.0.7",
     "ws": "8.22.0"

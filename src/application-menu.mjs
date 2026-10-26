@@ -23,7 +23,7 @@ export function applicationMenuItems(name, editor, desktop) {
       messageTuple(['close-project', 'close', interfaceText("commands.closeProject"), 'Ctrl W'], {2: {key: "commands.closeProject", params: {}}}),
       null,
       {label: interfaceText("applicationMenu.import"), labelKey: "applicationMenu.import", icon: 'import', submenu: [
-        ['generate-scene', 'person', 'Generate animated scene…'],
+        ['generate-scene', 'person', 'Generate animated scene…'], ['hyperframes-presentation', 'export', 'Hyperframes presentation…'],
         messageTuple(['import', 'import', interfaceText("applicationMenu.importFigures")], {2: {key: "applicationMenu.importFigures", params: {}}}),
         messageTuple(['import-sprite', 'image', interfaceText("applicationMenu.importSpriteImage")], {2: {key: "applicationMenu.importSpriteImage", params: {}}}),
         messageTuple(['import-background', 'image', interfaceText("applicationMenu.importBackground")], {2: {key: "applicationMenu.importBackground", params: {}}}),

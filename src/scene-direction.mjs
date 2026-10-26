@@ -24,7 +24,7 @@ export function directScene(report,plan){
  if(plan.direction==='off')return;
  let previous={x:0,y:0,scale:1.05};
  for(const [i,beat] of plan.beats.entries()){
-  const first=beat.start*report.fps,count=beat.duration*report.fps;
+  const first=Math.round(beat.start*report.fps),count=Math.round(beat.duration*report.fps);
   const samples=[0,.25,.5,.75,1].map(u=>sceneActorBounds(report,report.keyframes[first+Math.round(u*(count-1))],plan.people));
   const target=shot(union(samples),plan.direction,i===0||i===plan.beats.length-1||beat.actions.some(a=>['run','walk','jump','approach'].includes(a)));
   for(let f=0;f<count;f++){
